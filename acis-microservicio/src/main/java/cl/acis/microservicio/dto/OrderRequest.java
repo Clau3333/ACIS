@@ -7,9 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public class OrderRequest {
     @PositiveOrZero private Long id;
+    @NotBlank @Pattern(regexp = "(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+    private String clientOrderId;
     @NotBlank @Size(max = 255) private String site;
     @NotBlank @Size(max = 255) private String address;
     @NotBlank @Size(max = 255) private String equipment;
@@ -31,6 +34,8 @@ public class OrderRequest {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public String getClientOrderId() { return clientOrderId; }
+    public void setClientOrderId(String clientOrderId) { this.clientOrderId = clientOrderId; }
     public String getSite() { return site; }
     public void setSite(String site) { this.site = site; }
     public String getAddress() { return address; }

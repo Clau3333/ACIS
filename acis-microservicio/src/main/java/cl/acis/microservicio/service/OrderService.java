@@ -43,7 +43,16 @@ public class OrderService {
         }
         validateBaseText(request);
 
+        WorkOrder existing = repository.findByClientOrderId(request.getClientOrderId()).orElse(null);
+        if (existing != null) {
+            if (matchesSnapshot(existing, request)) {
+                return toResponse(existing);
+            }
+            throw new OrderRuleException("La clave clientOrderId ya fue usada con otros datos");
+        }
+
         WorkOrder order = new WorkOrder();
+        order.setClientOrderId(request.getClientOrderId());
         apply(request, order);
         order.setStage(Stage.ASSIGNED);
         order.setCustomerConfirmed(false);
@@ -56,10 +65,17 @@ public class OrderService {
             throw new OrderRuleException("El identificador del cuerpo debe coincidir con la ruta");
         }
         WorkOrder order = requireOrder(id);
+        if (order.getClientOrderId() == null
+                || !order.getClientOrderId().equals(request.getClientOrderId())) {
+            throw new OrderRuleException("clientOrderId no coincide con la orden remota");
+        }
         Stage current = order.getStage();
         Stage requested = request.getStage();
 
         if (current == Stage.CLOSED) {
+            if (requested == Stage.CLOSED && matchesSnapshot(order, request)) {
+                return toResponse(order);
+            }
             throw new OrderRuleException("Una orden CLOSED es terminal y no se puede modificar");
         }
         if (requested != current && !current.canMoveTo(requested)) {
@@ -150,10 +166,33 @@ public class OrderService {
 
     private static OrderResponse toResponse(WorkOrder order) {
         return new OrderResponse(
-                order.getId(), order.getSite(), order.getAddress(), order.getEquipment(),
+                order.getId(), order.getClientOrderId(), order.getSite(), order.getAddress(), order.getEquipment(),
                 order.getTechnician(), order.getPriority(), order.getType(), order.getProblem(),
                 order.getStage(), order.getDiagnosis(), order.getWork(), order.getMaterials(),
                 order.getLocation(), order.getArrival(), order.getDeparture(), order.getCustomer(),
                 order.getFeedback(), order.isCustomerConfirmed(), order.getEvidenceCount());
+    }
+
+    private static boolean matchesSnapshot(WorkOrder order, OrderRequest request) {
+        return (request.getId() == null || request.getId() == 0L || request.getId().equals(order.getId()))
+                && order.getClientOrderId().equals(request.getClientOrderId())
+                && order.getSite().equals(valueOrEmpty(request.getSite()))
+                && order.getAddress().equals(valueOrEmpty(request.getAddress()))
+                && order.getEquipment().equals(valueOrEmpty(request.getEquipment()))
+                && order.getTechnician().equals(valueOrEmpty(request.getTechnician()))
+                && order.getPriority().equals(valueOrEmpty(request.getPriority()))
+                && order.getType().equals(valueOrEmpty(request.getType()))
+                && order.getProblem().equals(valueOrEmpty(request.getProblem()))
+                && order.getStage() == request.getStage()
+                && order.getDiagnosis().equals(valueOrEmpty(request.getDiagnosis()))
+                && order.getWork().equals(valueOrEmpty(request.getWork()))
+                && order.getMaterials().equals(valueOrEmpty(request.getMaterials()))
+                && order.getLocation().equals(valueOrEmpty(request.getLocation()))
+                && order.getArrival() == request.getArrival()
+                && order.getDeparture() == request.getDeparture()
+                && order.getCustomer().equals(valueOrEmpty(request.getCustomer()))
+                && order.getFeedback().equals(valueOrEmpty(request.getFeedback()))
+                && order.isCustomerConfirmed() == request.isCustomerConfirmed()
+                && order.getEvidenceCount() == request.getEvidenceCount();
     }
 }

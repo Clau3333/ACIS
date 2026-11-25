@@ -37,6 +37,7 @@ Ejemplo mínimo de creación:
 
 ```json
 {
+  "clientOrderId": "a5796a8e-8497-4cc2-bdbf-44f1ab736c71",
   "site": "Local ACIS",
   "address": "Av. Central 100",
   "equipment": "Equipo 1",
@@ -51,10 +52,12 @@ Ejemplo con `curl`:
 
 ```sh
 curl -i -H "Content-Type: application/json" \
-  -d '{"site":"Local ACIS","address":"Av. Central 100","equipment":"Equipo 1","technician":"Técnico 1","priority":"Normal","type":"Preventiva","problem":"Mantención preventiva"}' \
+  -d '{"clientOrderId":"a5796a8e-8497-4cc2-bdbf-44f1ab736c71","site":"Local ACIS","address":"Av. Central 100","equipment":"Equipo 1","technician":"Técnico 1","priority":"Normal","type":"Preventiva","problem":"Mantención preventiva"}' \
   http://localhost:8080/api/ordenes
 ```
 
+`clientOrderId` es un UUID persistente generado por el cliente. Repetir un `POST` con la misma clave y el mismo contenido devuelve la orden existente; reutilizarla con datos distintos responde 409. Los `PUT` deben incluir la misma clave que está asociada a la orden; repetir exactamente una actualización aceptada es seguro, incluso si se perdió la respuesta del cierre.
+
 ## Fotografías
 
-El contrato no acepta ni devuelve `photo`, `photos` ni rutas privadas del teléfono; los campos JSON desconocidos se rechazan. `evidenceCount` solo conserva el número declarado para aplicar el límite y exigir evidencia antes de `DONE`; no representa archivos recibidos ni prueba que existan. La carga, transferencia segura, almacenamiento y consulta de imágenes quedan pendientes de un diseño posterior. La app Android y su SQLite no se modifican.
+El contrato no acepta ni devuelve `photo`, `photos` ni rutas privadas del teléfono; los campos JSON desconocidos se rechazan. `evidenceCount` solo conserva el número declarado para aplicar el límite y exigir evidencia antes de `DONE`; no representa archivos recibidos ni prueba que existan. La carga, transferencia segura, almacenamiento y consulta de imágenes quedan pendientes de un diseño posterior. Android mantiene SQLite como fuente local y conserva allí la asociación de IDs y la cola; la sincronización permanece desactivada desde la interfaz y el ViewModel.

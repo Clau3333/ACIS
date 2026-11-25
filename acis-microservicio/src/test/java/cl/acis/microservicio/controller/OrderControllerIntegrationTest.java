@@ -61,6 +61,19 @@ class OrderControllerIntegrationTest {
 
     @Test
     void validatesCreationAndRejectsPrivatePhotoPathFields() throws Exception {
+        ObjectNode missingIdempotencyKey = validRequest();
+        missingIdempotencyKey.remove("clientOrderId");
+        mvc.perform(post("/api/ordenes").contentType(MediaType.APPLICATION_JSON)
+                        .content(missingIdempotencyKey.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.clientOrderId").exists());
+
+        ObjectNode malformedIdempotencyKey = validRequest();
+        malformedIdempotencyKey.put("clientOrderId", "not-a-uuid");
+        mvc.perform(post("/api/ordenes").contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedIdempotencyKey.toString()))
+                .andExpect(status().isBadRequest());
+
         ObjectNode invalid = validRequest();
         invalid.put("site", " ");
         mvc.perform(post("/api/ordenes").contentType(MediaType.APPLICATION_JSON).content(invalid.toString()))
@@ -74,8 +87,40 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
+    void repeatedCreateWithSameClientOrderIdReturnsExistingOrder() throws Exception {
+        ObjectNode request = validRequest();
+        MvcResult first = mvc.perform(post("/api/ordenes")
+                        .contentType(MediaType.APPLICATION_JSON).content(request.toString()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.clientOrderId").value(CLIENT_ORDER_ID))
+                .andReturn();
+        long firstId = mapper.readTree(first.getResponse().getContentAsString()).get("id").asLong();
+
+        MvcResult retry = mvc.perform(post("/api/ordenes")
+                        .contentType(MediaType.APPLICATION_JSON).content(request.toString()))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        org.junit.jupiter.api.Assertions.assertEquals(
+                firstId, mapper.readTree(retry.getResponse().getContentAsString()).get("id").asLong());
+        org.junit.jupiter.api.Assertions.assertEquals(1, repository.count());
+
+        ObjectNode changedRequest = validRequest();
+        changedRequest.put("site", "Otro local");
+        mvc.perform(post("/api/ordenes").contentType(MediaType.APPLICATION_JSON)
+                        .content(changedRequest.toString()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void updatesFieldsAndEnforcesProgressionAndCustomerConfirmation() throws Exception {
         long id = createOrder();
+
+        ObjectNode foreignClientKey = requestAt("ACCEPTED");
+        foreignClientKey.put("clientOrderId", "b5796a8e-8497-4cc2-bdbf-44f1ab736c71");
+        mvc.perform(put("/api/ordenes/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content(foreignClientKey.toString()))
+                .andExpect(status().isConflict());
 
         mvc.perform(put("/api/ordenes/{id}", id).contentType(MediaType.APPLICATION_JSON)
                         .content(requestAt("ACTIVE").toString()))
@@ -128,7 +173,8 @@ class OrderControllerIntegrationTest {
 
         mvc.perform(put("/api/ordenes/{id}", id).contentType(MediaType.APPLICATION_JSON)
                         .content(close.toString()))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stage").value("CLOSED"));
     }
 
     private long createOrder() throws Exception {
@@ -141,6 +187,7 @@ class OrderControllerIntegrationTest {
     private ObjectNode validRequest() {
         ObjectNode body = mapper.createObjectNode();
         body.put("id", 0);
+        body.put("clientOrderId", CLIENT_ORDER_ID);
         body.put("site", "Local ACIS");
         body.put("address", "Av. Central 100");
         body.put("equipment", "Equipo 1");
@@ -158,4 +205,6 @@ class OrderControllerIntegrationTest {
         body.put("stage", stage);
         return body;
     }
+
+    private static final String CLIENT_ORDER_ID = "a5796a8e-8497-4cc2-bdbf-44f1ab736c71";
 }

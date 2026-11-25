@@ -16,6 +16,10 @@ public class WorkOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Null is allowed only for legacy rows created before client idempotency existed.
+    @Column(name = "client_order_id", length = 36, unique = true)
+    private String clientOrderId;
+
     @Column(nullable = false)
     private String site;
     @Column(nullable = false)
@@ -62,6 +66,8 @@ public class WorkOrder {
     }
 
     public Long getId() { return id; }
+    public String getClientOrderId() { return clientOrderId; }
+    public void setClientOrderId(String clientOrderId) { this.clientOrderId = clientOrderId; }
     public String getSite() { return site; }
     public void setSite(String site) { this.site = site; }
     public String getAddress() { return address; }

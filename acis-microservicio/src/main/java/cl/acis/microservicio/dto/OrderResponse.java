@@ -4,6 +4,7 @@ import cl.acis.microservicio.model.Stage;
 
 public record OrderResponse(
         Long id,
+        String clientOrderId,
         String site,
         String address,
         String equipment,

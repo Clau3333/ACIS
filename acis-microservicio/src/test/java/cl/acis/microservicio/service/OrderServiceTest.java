@@ -77,6 +77,7 @@ class OrderServiceTest {
 
     private static WorkOrder orderAt(Stage stage, boolean confirmed) {
         WorkOrder order = new WorkOrder();
+        order.setClientOrderId(CLIENT_ORDER_ID);
         order.setSite("Local ACIS");
         order.setAddress("Av. Central 100");
         order.setEquipment("Equipo 1");
@@ -95,6 +96,7 @@ class OrderServiceTest {
 
     private static OrderRequest requestAt(Stage stage) {
         OrderRequest request = new OrderRequest();
+        request.setClientOrderId(CLIENT_ORDER_ID);
         request.setSite("Local ACIS");
         request.setAddress("Av. Central 100");
         request.setEquipment("Equipo 1");
@@ -108,4 +110,6 @@ class OrderServiceTest {
         request.setEvidenceCount(1);
         return request;
     }
+
+    private static final String CLIENT_ORDER_ID = "a5796a8e-8497-4cc2-bdbf-44f1ab736c71";
 }
