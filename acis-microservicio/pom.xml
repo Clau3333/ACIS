@@ -44,14 +44,14 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- PostgreSQL para desarrollo -->
+        <!-- PostgreSQL opcional; H2 permanece como base de datos predeterminada. -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 para demostraciones -->
+        <!-- H2 predeterminado para desarrollo local y demostraciones. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
